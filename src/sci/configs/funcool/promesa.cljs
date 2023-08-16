@@ -7,7 +7,7 @@
   (:require [clojure.core :as c]
             [promesa.core :as p]
             [promesa.exec :as exec]
-            [promesa.protocols :as pt]
+            ;; [promesa.protocols :as pt]
             [sci.core :as sci]))
 
 (def pns (sci/create-ns 'promesa.core nil))
@@ -18,27 +18,27 @@
   to the last expression. Always awaiting the result of each
   expression."
   [_ _ & exprs]
-  `(pt/-bind
-    (pt/-promise nil)
+  `(p/bind
+    (p/promise nil)
     (fn [_#]
       ~(condp = (count exprs)
-         0 `(pt/-promise nil)
-         1 `(pt/-promise ~(first exprs))
+         0 `(p/promise nil)
+         1 `(p/promise ~(first exprs))
          (reduce (fn [acc e]
-                   `(pt/-bind (pt/-promise ~e) (fn [_#] ~acc)))
-                 `(pt/-promise ~(last exprs))
+                   `(p/bind (p/promise ~e) (fn [_#] ~acc)))
+                 `(p/promise ~(last exprs))
                  (reverse (butlast exprs)))))))
 
 (defn ^:macro let
   "A `let` alternative that always returns promise and waits for all the
   promises on the bindings."
   [_ _ bindings & body]
-  `(pt/-bind
-    (pt/-promise nil)
+  `(p/bind
+    (p/promise nil)
     (fn [_#]
       ~(c/->> (reverse (partition 2 bindings))
               (reduce (fn [acc [l r]]
-                        `(pt/-bind (pt/-promise ~r) (fn [~l] ~acc)))
+                        `(p/bind (p/promise ~r) (fn [~l] ~acc)))
                       `(promesa.core/do! ~@body))))))
 
 (defn ^:macro ->
@@ -197,11 +197,12 @@
    'wrap          (sci/copy-var p/wrap pns)
    'doseq         (sci/copy-var doseq pns)})
 
-(def promesa-protocols-namespace
-  {'-bind (sci/copy-var pt/-bind ptns)
-   '-promise (sci/copy-var pt/-promise ptns)})
+;; (def promesa-protocols-namespace
+;;   {'-bind (sci/copy-var pt/-bind ptns)
+;;    '-promise (sci/copy-var pt/-promise ptns)})
 
 (def namespaces {'promesa.core promesa-namespace
-                 'promesa.protocols promesa-protocols-namespace})
+                 ;; 'promesa.protocols promesa-protocols-namespace
+                 })
 
 (def config {:namespaces namespaces})
